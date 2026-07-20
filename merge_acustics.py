@@ -128,6 +128,50 @@ def cleanup_cache_duplicates(cache, duplicates_set):
     print("💾 Кэш успешно очищен от дубликатов и сохранен.")
 
 
+def delete_duplicate_files(wav_folder_path, duplicates_set, dry_run=True):
+    """
+    Удаляет физические файлы-дубликаты с диска на основе множества duplicates_set.
+    dry_run=True — безопасный режим (только показывает, что удалит).
+    dry_run=False — реальное удаление файлов.
+    """
+    if not duplicates_set:
+        print("\n🚫 Нет файлов для удаления: список дубликатов пуст.")
+        return
+
+    base_path = Path(wav_folder_path)
+    if not base_path.exists():
+        print(f"\n❌ Ошибка: Базовая папка {wav_folder_path} не найдена на диске!")
+        return
+
+    print(f"\n{ '♻️ СИМУЛЯЦИЯ' if dry_run else '⚠️ ВНИМАНИЕ' }: Начинается удаление файлов с диска...")
+    deleted_count = 0
+    failed_count = 0
+
+    for rel_path_str in duplicates_set:
+        file_path = base_path / rel_path_str
+
+        if file_path.exists():
+            if dry_run:
+                print(f"   [Будет удален]: {file_path.resolve()}")
+                deleted_count += 1
+            else:
+                try:
+                    file_path.unlink() # Физическое удаление файла
+                    print(f"   [Удален]: {file_path.name} из {file_path.parent.name}")
+                    deleted_count += 1
+                except Exception as e:
+                    print(f"   ❌ Не удалось удалить {file_path.name}: {e}")
+                    failed_count += 1
+        else:
+            print(f"   ❓ Файл не найден на диске (возможно, уже удален): {rel_path_str}")
+
+    status = "Условно удалено" if dry_run else "Успешно удалено"
+    print(f"\n📊 Итог удаления: {status}: {deleted_count} файлов. Ошибок: {failed_count}.")
+    if dry_run:
+        print("💡 Чтобы запустить реальное удаление, передайте параметр dry_run=False.")
+
+
+
 def scan_and_compare():
     wav_path = Path(WAV_FOLDER)
     if not wav_path.exists():
@@ -216,7 +260,10 @@ def scan_and_compare():
     if not found_any:
         print("Похожих треков с заданным порогом не обнаружено.")
 
+#опциональные вызовы. очистка кеша от дублей. автоматическое удаление файлов
     cleanup_cache_duplicates(cache, already_printed_as_duplicate)
+    # Пока dry_run=True, файлы НЕ удаляются, а только выводятся в консоль для проверки!
+    delete_duplicate_files(WAV_FOLDER, already_printed_as_duplicate, dry_run=True)
 
 
 if __name__ == "__main__":
