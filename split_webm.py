@@ -146,7 +146,7 @@ def split_by_silence(
     out_dir = Path(output_dir).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Границы сегментов: старт = 0, затем после каждой паузы
+
     boundaries = [0.0]
     for s in silence_data:
         boundaries.append(s["start"] + s["duration"])

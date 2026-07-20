@@ -103,6 +103,31 @@ def save_cache(cache_data):
         print(f"❌ Не удалось сохранить кэш: {e}")
 
 
+def cleanup_cache_duplicates(cache, duplicates_set):
+    """
+    Удаляет из кэша все треки, которые были признаны дубликатами,
+    и сохраняет обновленную чистую базу.
+    """
+    if not duplicates_set:
+        print("\n🧹 Очистка кэша не требуется: дубликатов не найдено.")
+        return
+
+    print(f"\n🧹 Начало очистки кэша. Найдено дубликатов для удаления: {len(duplicates_set)}")
+
+    for duplicate_path in duplicates_set:
+        if "/" in duplicate_path:
+            album_name, track_name = duplicate_path.split("/", 1)
+
+            if album_name in cache and track_name in cache[album_name]:
+                del cache[album_name][track_name]
+
+                if not cache[album_name]:
+                    del cache[album_name]
+
+    save_cache(cache)
+    print("💾 Кэш успешно очищен от дубликатов и сохранен.")
+
+
 def scan_and_compare():
     wav_path = Path(WAV_FOLDER)
     if not wav_path.exists():
@@ -121,7 +146,6 @@ def scan_and_compare():
     for album_path in albums:
         album_name = album_path.name  # Уникальное имя папки-альбома
 
-        # Инициализируем альбом в кэше, если его вообще не было
         if album_name not in cache:
             cache[album_name] = {}
 
@@ -191,6 +215,8 @@ def scan_and_compare():
 
     if not found_any:
         print("Похожих треков с заданным порогом не обнаружено.")
+
+    cleanup_cache_duplicates(cache, already_printed_as_duplicate)
 
 
 if __name__ == "__main__":
